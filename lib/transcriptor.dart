@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttr_protorecorder/languages.dart';
+import 'package:fluttr_protorecorder/pages/pages.dart';
 import 'package:fluttr_protorecorder/recognizer.dart';
-import 'package:fluttr_protorecorder/task.dart';
 
 class TranscriptorWidget extends StatefulWidget {
   final Language lang;
@@ -17,17 +17,12 @@ class TranscriptorWidget extends StatefulWidget {
 
 class _TranscriptorAppState extends State<TranscriptorWidget> {
   String transcription = '';
-
+  String label = '';
   bool authorized = false;
 
   bool isListening = false;
 
-  List<Task> todos = [];
-
   bool get isNotEmpty => transcription != '';
-
-  get numArchived => todos.where((t) => t.complete).length;
-  Iterable<Task> get incompleteTasks => todos.where((t) => !t.complete);
 
   @override
   void initState() {
@@ -48,14 +43,13 @@ class _TranscriptorAppState extends State<TranscriptorWidget> {
 
     List<Widget> blocks = [
       new Expanded(
-          flex: 2,
-          child: new ListView(
-              children: incompleteTasks
-                  .map((t) => _buildTaskWidgets(
-                      task: t,
-                      onDelete: () => _deleteTaskHandler(t),
-                      onComplete: () => _completeTaskHandler(t)))
-                  .toList())),
+        flex: 2,
+        child: new Center(
+            child: new Padding(
+                padding: new EdgeInsets.all(10.0),
+                child: new InkWell(onTap: goToPage,child: new Text(label,style: TextStyle(fontWeight: FontWeight.bold,fontSize: 20.0),),)
+            )),
+      ),
       _buildButtonBar(),
     ];
     if (isListening || transcription != '')
@@ -69,19 +63,87 @@ class _TranscriptorAppState extends State<TranscriptorWidget> {
         child: new Column(mainAxisSize: MainAxisSize.min, children: blocks));
   }
 
+   goToPage(){
+    switch(label){
+      case "home":
+        Navigator.push(
+            context,
+            new MaterialPageRoute(
+                builder: (context) => new HomeScreen("Home screen")));
+   break;
+      case "courses":
+      case "course":
+        Navigator.push(
+            context,
+            new MaterialPageRoute(
+                builder: (context) => new HomeScreen("Courses screen")));
+        break;
+      case "to do":
+      case "to do list":
+        Navigator.push(
+            context,
+            new MaterialPageRoute(
+                builder: (context) => new HomeScreen("To do list  screen")));
+        break;
+
+      case "profile":
+      case "email":
+      case "info":
+      case "information":
+        Navigator.push(
+            context,
+            new MaterialPageRoute(
+                builder: (context) => new HomeScreen("Assessment screen")));
+        break;
+
+      case "schedule":
+      case "my schedule":
+      case "course":
+        Navigator.push(
+            context,
+            new MaterialPageRoute(
+                builder: (context) => new HomeScreen("Schadule screen")));
+        break;
+
+      case "request":
+      case "add new request":
+        Navigator.push(
+            context,
+            new MaterialPageRoute(
+                builder: (context) => new HomeScreen("Add request screen")));
+        break;
+
+      case "study":
+        Navigator.push(
+            context,
+            new MaterialPageRoute(
+                builder: (context) => new HomeScreen("Study screen")));
+        break;
+        //chat list /chat
+      case "chat":
+      case "chat with":
+      case "chat list":
+      case "chat history":
+        Navigator.push(
+            context,
+            new MaterialPageRoute(
+                builder: (context) => new HomeScreen("Chat screen")));
+        break;
+
+    }
+   }
+
   void _saveTranscription() {
-    if (transcription.isEmpty) return;
     setState(() {
-      todos.add(new Task(
-          taskId: new DateTime.now().millisecondsSinceEpoch,
-          label: transcription));
-      transcription = '';
+      label = transcription;
+
     });
     _cancelRecognitionHandler();
   }
 
   Future _startRecognition() async {
     final res = await SpeechRecognizer.start(widget.lang.code);
+    print(widget.lang.code);
     if (!res)
       showDialog(
           context: context,
@@ -112,7 +174,7 @@ class _TranscriptorAppState extends State<TranscriptorWidget> {
         setState(() => isListening = call.arguments);
         break;
       case "onSpeech":
-        if (todos.isNotEmpty) if (transcription == todos.last.label) return;
+        if (isNotEmpty) return;
         setState(() => transcription = call.arguments);
         break;
       case "onRecognitionStarted":
@@ -120,14 +182,8 @@ class _TranscriptorAppState extends State<TranscriptorWidget> {
         break;
       case "onRecognitionComplete":
         setState(() {
-          if (todos.isEmpty) {
-            transcription = call.arguments;
-          } else if (call.arguments == todos.last?.label)
-            // on ios user can have correct partial recognition
-            // => if user add it before complete recognition just clear the transcription
-            transcription = '';
-          else
-            transcription = call.arguments;
+          transcription = call.arguments;
+
         });
         break;
       default:
@@ -135,20 +191,6 @@ class _TranscriptorAppState extends State<TranscriptorWidget> {
     }
   }
 
-  void _deleteTaskHandler(Task t) {
-    setState(() {
-      todos.remove(t);
-      _showStatus("cancelled");
-    });
-  }
-
-  void _completeTaskHandler(Task completed) {
-    setState(() {
-      todos =
-          todos.map((t) => completed == t ? (t..complete = true) : t).toList();
-      _showStatus("completed");
-    });
-  }
 
   Widget _buildButtonBar() {
     List<Widget> buttons = [
@@ -176,7 +218,7 @@ class _TranscriptorAppState extends State<TranscriptorWidget> {
                     padding: new EdgeInsets.all(8.0), child: new Text(text))),
             new IconButton(
                 icon: new Icon(Icons.close, color: Colors.grey.shade600),
-                onPressed: text != '' ? () => onCancel() : null),
+                onPressed: onCancel),
           ]));
 
   Widget _buildIconButton(IconData icon, VoidCallback onPress,
@@ -197,15 +239,6 @@ class _TranscriptorAppState extends State<TranscriptorWidget> {
     );
   }
 
-  Widget _buildTaskWidgets(
-      {Task task, VoidCallback onDelete, VoidCallback onComplete}) {
-    return new TaskWidget(
-        label: task.label, onDelete: onDelete, onComplete: onComplete);
-  }
 
-  void _showStatus(String action) {
-    final label = "Task $action : ${incompleteTasks.length} left "
-        "/ ${numArchived} archived";
-    Scaffold.of(context).showSnackBar(new SnackBar(content: new Text(label)));
-  }
+
 }

@@ -15,10 +15,10 @@ class SytodyAppState extends State<SytodyApp> {
     return new MaterialApp(
       home: new Scaffold(
         appBar: new AppBar(
-          title: new Row(children: [
-            new Image.asset('assets/sytody.png', fit: BoxFit.fitHeight),
-            new Text('Sytôdy'),
-          ]),
+//          title: new Row(children: [
+//            new Image.asset('assets/sytody.png', fit: BoxFit.fitHeight),
+//            new Text('Sytôdy'),
+//          ]),
           backgroundColor: Colors.blueGrey,
           actions: [
             new PopupMenuButton<Language>(

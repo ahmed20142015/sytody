@@ -1,9 +1,10 @@
 
 const languages = const [
-  const Language('Francais', 'fr_FR'),
+ // const Language('Francais', 'fr_FR'),
   const Language('English', 'en_US'),
-  const Language('Pусский', 'ru_RU'),
-  const Language('Italiano', 'it_IT'),
+  const Language('Arabic', 'ar_EG'),
+ // const Language('Pусский', 'ru_RU'),
+  //const Language('Italiano', 'it_IT'),
 ];
 
 class Language {
